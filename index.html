@@ -1,0 +1,1738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How I Build My Systems — Chelsea Andrea Dominguez</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f11;
+    --surface: #17171a;
+    --surface2: #1e1e22;
+    --border: #2a2a30;
+    --border-light: #333339;
+    --text: #e8e8ec;
+    --text-muted: #8a8a96;
+    --text-dim: #555560;
+    --accent: #c9a96e;
+    --accent-soft: rgba(201, 169, 110, 0.12);
+    --accent-border: rgba(201, 169, 110, 0.25);
+    --green: #6ecfa3;
+    --green-soft: rgba(110, 207, 163, 0.1);
+    --blue: #6ea8cf;
+    --blue-soft: rgba(110, 168, 207, 0.1);
+    --red: #cf6e6e;
+    --red-soft: rgba(207, 110, 110, 0.1);
+    --purple: #a96ecf;
+    --purple-soft: rgba(169, 110, 207, 0.1);
+    --yellow: #cfcf6e;
+    --yellow-soft: rgba(207, 207, 110, 0.1);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  /* Layout */
+  .layout { display: flex; min-height: 100vh; }
+
+  /* Sidebar */
+  .sidebar {
+    width: 260px;
+    flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    overflow-y: auto;
+    padding: 24px 0;
+    z-index: 100;
+  }
+
+  .sidebar-brand {
+    padding: 0 20px 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+
+  .sidebar-brand-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+
+  .sidebar-brand-name {
+    font-family: 'DM Serif Display', serif;
+    font-size: 15px;
+    color: var(--text);
+    line-height: 1.3;
+  }
+
+  .sidebar-section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    padding: 12px 20px 6px;
+  }
+
+  .sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 20px;
+    font-size: 13px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    border-left: 2px solid transparent;
+    text-decoration: none;
+  }
+
+  .sidebar-item:hover { color: var(--text); background: var(--surface2); }
+  .sidebar-item.active { color: var(--accent); border-left-color: var(--accent); background: var(--accent-soft); }
+
+  .sidebar-item .dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--text-dim);
+    flex-shrink: 0;
+  }
+
+  .sidebar-item.active .dot { background: var(--accent); }
+
+  .sidebar-sub {
+    padding-left: 38px;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  /* Main content */
+  .main {
+    margin-left: 260px;
+    flex: 1;
+    max-width: 860px;
+    padding: 60px 64px 120px;
+  }
+
+  /* Page header */
+  .page-header {
+    margin-bottom: 56px;
+    padding-bottom: 40px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .page-eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 16px;
+  }
+
+  .page-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 42px;
+    line-height: 1.15;
+    color: var(--text);
+    margin-bottom: 16px;
+  }
+
+  .page-subtitle {
+    font-size: 16px;
+    color: var(--text-muted);
+    max-width: 560px;
+    line-height: 1.6;
+  }
+
+  .page-meta {
+    display: flex;
+    gap: 24px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+  }
+
+  .meta-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  .meta-badge {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  /* Table of contents */
+  .toc {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px 28px;
+    margin-bottom: 56px;
+  }
+
+  .toc-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 16px;
+  }
+
+  .toc-list { list-style: none; }
+
+  .toc-item {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    padding: 5px 0;
+    font-size: 13px;
+  }
+
+  .toc-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    min-width: 24px;
+  }
+
+  .toc-link {
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+
+  .toc-link:hover { color: var(--accent); }
+
+  .toc-sub { padding-left: 36px; }
+  .toc-sub .toc-num { color: var(--text-dim); }
+  .toc-sub .toc-link { font-size: 12px; color: var(--text-dim); }
+
+  /* Sections */
+  .section { margin-bottom: 72px; }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .section-number {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    background: var(--accent-soft);
+    border: 1px solid var(--accent-border);
+    border-radius: 6px;
+    padding: 4px 10px;
+    flex-shrink: 0;
+  }
+
+  .section-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 26px;
+    color: var(--text);
+  }
+
+  .subsection { margin-bottom: 48px; }
+
+  .subsection-title {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .subsection-title::before {
+    content: '';
+    width: 3px;
+    height: 18px;
+    background: var(--accent);
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  /* Steps */
+  .steps { display: flex; flex-direction: column; gap: 0; }
+
+  .step {
+    display: flex;
+    gap: 20px;
+    padding-bottom: 28px;
+    position: relative;
+  }
+
+  .step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 19px;
+    top: 40px;
+    bottom: 0;
+    width: 1px;
+    background: var(--border);
+  }
+
+  .step-num {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--accent);
+    flex-shrink: 0;
+    z-index: 1;
+  }
+
+  .step-content { flex: 1; padding-top: 8px; }
+
+  .step-title {
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 8px;
+    font-size: 14px;
+  }
+
+  .step-body {
+    color: var(--text-muted);
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  /* Callouts */
+  .callout {
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 20px 0;
+    display: flex;
+    gap: 14px;
+    font-size: 13.5px;
+    line-height: 1.65;
+  }
+
+  .callout-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .callout-body { flex: 1; }
+  .callout-title { font-weight: 600; margin-bottom: 4px; font-size: 13px; }
+
+  .callout.tip { background: var(--green-soft); border: 1px solid rgba(110, 207, 163, 0.2); color: var(--green); }
+  .callout.tip .callout-title { color: var(--green); }
+  .callout.tip .callout-body { color: rgba(110, 207, 163, 0.8); }
+
+  .callout.warning { background: var(--yellow-soft); border: 1px solid rgba(207, 207, 110, 0.2); }
+  .callout.warning .callout-title { color: var(--yellow); }
+  .callout.warning .callout-body { color: rgba(207, 207, 110, 0.8); }
+
+  .callout.info { background: var(--blue-soft); border: 1px solid rgba(110, 168, 207, 0.2); }
+  .callout.info .callout-title { color: var(--blue); }
+  .callout.info .callout-body { color: rgba(110, 168, 207, 0.8); }
+
+  .callout.note { background: var(--accent-soft); border: 1px solid var(--accent-border); }
+  .callout.note .callout-title { color: var(--accent); }
+  .callout.note .callout-body { color: rgba(201, 169, 110, 0.8); }
+
+  .callout.critical { background: var(--red-soft); border: 1px solid rgba(207, 110, 110, 0.2); }
+  .callout.critical .callout-title { color: var(--red); }
+  .callout.critical .callout-body { color: rgba(207, 110, 110, 0.8); }
+
+  /* Code blocks */
+  .code-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin: 16px 0;
+    overflow: hidden;
+  }
+
+  .code-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+
+  .code-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  .code-dots { display: flex; gap: 6px; }
+  .code-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .code-dot:nth-child(1) { background: #cf6e6e; }
+  .code-dot:nth-child(2) { background: #cfcf6e; }
+  .code-dot:nth-child(3) { background: #6ecfa3; }
+
+  .code-content {
+    padding: 20px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12.5px;
+    line-height: 1.7;
+    color: var(--text-muted);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .code-content .highlight { color: var(--accent); }
+  .code-content .comment { color: var(--text-dim); font-style: italic; }
+  .code-content .keyword { color: var(--blue); }
+  .code-content .string { color: var(--green); }
+
+  /* Inline code */
+  code {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 6px;
+    color: var(--accent);
+  }
+
+  /* Checklist */
+  .checklist { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+
+  .check-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  .check-box {
+    width: 18px; height: 18px;
+    border: 1.5px solid var(--border-light);
+    border-radius: 4px;
+    flex-shrink: 0;
+    margin-top: 2px;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .check-box.done { background: var(--green-soft); border-color: var(--green); }
+  .check-box.done::after { content: '✓'; font-size: 11px; color: var(--green); }
+
+  /* Tag pills */
+  .tags { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+
+  .tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid;
+  }
+
+  .tag.green { color: var(--green); border-color: rgba(110, 207, 163, 0.3); background: var(--green-soft); }
+  .tag.blue { color: var(--blue); border-color: rgba(110, 168, 207, 0.3); background: var(--blue-soft); }
+  .tag.accent { color: var(--accent); border-color: var(--accent-border); background: var(--accent-soft); }
+  .tag.purple { color: var(--purple); border-color: rgba(169, 110, 207, 0.3); background: var(--purple-soft); }
+  .tag.red { color: var(--red); border-color: rgba(207, 110, 110, 0.3); background: var(--red-soft); }
+
+  /* Divider */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 40px 0;
+  }
+
+  /* Table */
+  .table-wrap { overflow-x: auto; margin: 20px 0; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+
+  th {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    padding: 10px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-muted);
+    vertical-align: top;
+    line-height: 1.5;
+  }
+
+  tr:last-child td { border-bottom: none; }
+
+  /* Info card */
+  .info-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin: 16px 0;
+  }
+
+  .info-card-title {
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+
+  .info-card-body {
+    font-size: 13.5px;
+    color: var(--text-muted);
+    line-height: 1.65;
+  }
+
+  /* Two-col grid */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 16px 0;
+  }
+
+  /* Prose */
+  p { color: var(--text-muted); font-size: 14.5px; line-height: 1.75; margin-bottom: 14px; }
+  p:last-child { margin-bottom: 0; }
+
+  strong { color: var(--text); font-weight: 600; }
+
+  /* Anchor headings */
+  [id] { scroll-margin-top: 32px; }
+
+  /* Section divider with label */
+  .part-divider {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin: 64px 0 48px;
+  }
+
+  .part-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--accent);
+    white-space: nowrap;
+    background: var(--accent-soft);
+    border: 1px solid var(--accent-border);
+    padding: 5px 12px;
+    border-radius: 4px;
+  }
+
+  .part-line { height: 1px; background: var(--border); flex: 1; }
+
+  /* Screenshot placeholder */
+  .screenshot-placeholder {
+    background: var(--surface2);
+    border: 1px dashed var(--border-light);
+    border-radius: 8px;
+    padding: 32px 24px;
+    text-align: center;
+    margin: 16px 0;
+  }
+
+  .screenshot-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 8px;
+  }
+
+  .screenshot-icon { font-size: 28px; margin-bottom: 8px; }
+
+  /* Inline note */
+  .inline-note {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  /* Progress indicator */
+  .progress-track {
+    display: flex;
+    gap: 0;
+    margin: 24px 0;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+
+  .progress-step {
+    flex: 1;
+    padding: 12px 16px;
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    color: var(--text-dim);
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    text-align: center;
+    line-height: 1.4;
+  }
+
+  .progress-step:last-child { border-right: none; }
+
+  .progress-step.active {
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-right-color: var(--accent-border);
+  }
+
+  .progress-step .ps-num {
+    display: block;
+    font-size: 16px;
+    margin-bottom: 2px;
+  }
+
+  /* Scroll indicator for sidebar */
+  .sidebar::-webkit-scrollbar { width: 4px; }
+  .sidebar::-webkit-scrollbar-track { background: transparent; }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* Mobile */
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; padding: 40px 24px 80px; }
+    .grid-2 { grid-template-columns: 1fr; }
+  }
+
+  /* Back to top */
+  .back-to-top {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 12px;
+    font-family: 'DM Mono', monospace;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+  }
+
+  .back-to-top:hover { color: var(--accent); border-color: var(--accent-border); }
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-brand">
+    <div class="sidebar-brand-tag">Systems Manual</div>
+    <div class="sidebar-brand-name">Chelsea Andrea<br>Dominguez</div>
+  </div>
+
+  <div class="sidebar-section-label">Overview</div>
+  <a href="#intro" class="sidebar-item active">
+    <span class="dot"></span> Introduction
+  </a>
+  <a href="#toc" class="sidebar-item">
+    <span class="dot"></span> Table of Contents
+  </a>
+
+  <div class="sidebar-section-label">Part 1 — Claude Projects</div>
+  <a href="#part1" class="sidebar-item">
+    <span class="dot"></span> What is a Project?
+  </a>
+  <a href="#project-create" class="sidebar-item">
+    <span class="dot"></span> Creating a Project
+  </a>
+  <a href="#project-instructions" class="sidebar-item">
+    <span class="dot"></span> Writing Instructions
+  </a>
+  <a href="#project-files" class="sidebar-item">
+    <span class="dot"></span> What to Upload
+  </a>
+  <a href="#project-use" class="sidebar-item">
+    <span class="dot"></span> Using the Project
+  </a>
+
+  <div class="sidebar-section-label">Part 2 — Case Study</div>
+  <a href="#casestudy-why" class="sidebar-item">
+    <span class="dot"></span> Why Write One First
+  </a>
+  <a href="#casestudy-gather" class="sidebar-item">
+    <span class="dot"></span> Gathering Materials
+  </a>
+  <a href="#casestudy-update" class="sidebar-item">
+    <span class="dot"></span> Updating LinkedIn & Resume
+  </a>
+  <a href="#casestudy-write" class="sidebar-item">
+    <span class="dot"></span> Writing the Case Study
+  </a>
+  <a href="#casestudy-output" class="sidebar-item">
+    <span class="dot"></span> Output Extensions
+  </a>
+
+  <div class="sidebar-section-label">Part 3 — Portfolio Site</div>
+  <a href="#portfolio-overview" class="sidebar-item">
+    <span class="dot"></span> Two Paths
+  </a>
+  <a href="#portfolio-migrate" class="sidebar-item">
+    <span class="dot"></span> Migrating from Notion
+  </a>
+  <a href="#portfolio-scratch" class="sidebar-item">
+    <span class="dot"></span> Starting from Scratch
+  </a>
+  <a href="#portfolio-github" class="sidebar-item">
+    <span class="dot"></span> GitHub Setup
+  </a>
+  <a href="#portfolio-netlify" class="sidebar-item">
+    <span class="dot"></span> Netlify Deployment
+  </a>
+  <a href="#portfolio-domain" class="sidebar-item">
+    <span class="dot"></span> Custom Domain
+  </a>
+
+  <div class="sidebar-section-label">Part 4 — Optional</div>
+  <a href="#seo-google" class="sidebar-item">
+    <span class="dot"></span> Google Search Console
+  </a>
+</nav>
+
+<!-- MAIN CONTENT -->
+<main class="main">
+
+  <!-- PAGE HEADER -->
+  <div id="intro" class="page-header">
+    <div class="page-eyebrow">Chelsea Andrea Dominguez · Systems Manual · v1.0</div>
+    <h1 class="page-title">How I Build<br><em>My Systems</em></h1>
+    <p class="page-subtitle">A step-by-step manual for building a Claude-assisted workflow, writing case studies that actually impress technical reviewers, and deploying a portfolio site from scratch or from Notion.</p>
+    <div class="page-meta">
+      <div class="meta-badge">Beginner-Friendly</div>
+      <div class="meta-badge">Claude Projects</div>
+      <div class="meta-badge">Portfolio · GitHub · Netlify</div>
+      <div class="meta-badge">Google Search Console</div>
+    </div>
+  </div>
+
+  <!-- TABLE OF CONTENTS -->
+  <div id="toc" class="toc">
+    <div class="toc-title">📋 Contents</div>
+    <ul class="toc-list">
+      <li class="toc-item"><span class="toc-num">01</span><a href="#part1" class="toc-link">Setting Up Claude Projects for Your Work</a></li>
+      <li class="toc-item toc-sub"><span class="toc-num">↳</span><a href="#project-create" class="toc-link">Creating the project</a></li>
+      <li class="toc-item toc-sub"><span class="toc-num">↳</span><a href="#project-instructions" class="toc-link">Writing your instructions</a></li>
+      <li class="toc-item toc-sub"><span class="toc-num">↳</span><a href="#project-files" class="toc-link">What files to upload</a></li>
+      <li class="toc-item"><span class="toc-num">02</span><a href="#casestudy-why" class="toc-link">Writing Your Case Study (Before Building the Portfolio)</a></li>
+      <li class="toc-item toc-sub"><span class="toc-num">↳</span><a href="#casestudy-gather" class="toc-link">Gathering your materials</a></li>
+      <li class="toc-item toc-sub"><span class="toc-num">↳</span><a href="#casestudy-update" class="toc-link">Updating LinkedIn & Resume</a></li>
+      <li class="toc-item toc-sub"><span class="toc-num">↳</span><a href="#casestudy-write" class="toc-link">Writing the case study with Claude</a></li>
+      <li class="toc-item"><span class="toc-num">03</span><a href="#portfolio-overview" class="toc-link">Building Your Portfolio Site</a></li>
+      <li class="toc-item toc-sub"><span class="toc-num">↳</span><a href="#portfolio-migrate" class="toc-link">Path A: Migrating from Notion to HTML</a></li>
+      <li class="toc-item toc-sub"><span class="toc-num">↳</span><a href="#portfolio-scratch" class="toc-link">Path B: Starting from scratch</a></li>
+      <li class="toc-item toc-sub"><span class="toc-num">↳</span><a href="#portfolio-github" class="toc-link">GitHub repository setup</a></li>
+      <li class="toc-item toc-sub"><span class="toc-num">↳</span><a href="#portfolio-netlify" class="toc-link">Deploying to Netlify</a></li>
+      <li class="toc-item"><span class="toc-num">04</span><a href="#seo-google" class="toc-link">Optional: Google Search Console Indexing</a></li>
+    </ul>
+  </div>
+
+
+  <!-- =================== PART DIVIDER =================== -->
+  <div class="part-divider">
+    <div class="part-label">Part 01</div>
+    <div class="part-line"></div>
+  </div>
+
+
+  <!-- PART 1: CLAUDE PROJECTS -->
+  <div id="part1" class="section">
+    <div class="section-header">
+      <span class="section-number">01</span>
+      <h2 class="section-title">Setting Up Claude Projects</h2>
+    </div>
+
+    <p>Claude Projects give you a persistent workspace where Claude remembers your context, your files, and your instructions across every conversation. Instead of copy-pasting your background every time you open a new chat, a Project holds everything Claude needs to know about you and your work. Think of it as giving Claude a permanent desk drawer for your stuff.</p>
+
+    <div class="callout tip">
+      <div class="callout-icon">💡</div>
+      <div class="callout-body">
+        <div class="callout-title">Why this matters for your workflow</div>
+        You can have one Project for your portfolio work, another for each client, and another for your personal systems building. Each one stays separate and focused.
+      </div>
+    </div>
+
+    <div id="project-create" class="subsection">
+      <div class="subsection-title">Step 1 — Creating Your Project</div>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <div class="step-title">Open Claude.ai and go to the sidebar</div>
+            <div class="step-body">On the left side of the screen, look for the <strong>Projects</strong> section. If you don't see it, scroll down in the sidebar. You'll see a small folder icon or the word "Projects."</div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <div class="step-title">Click "New Project" or the + icon next to Projects</div>
+            <div class="step-body">A setup screen will appear. You'll be asked to name your project and optionally write a short description.</div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <div class="step-title">Name your project clearly</div>
+            <div class="step-body">Use a name you'll instantly recognize. Examples:
+              <div class="tags" style="margin-top: 10px;">
+                <span class="tag accent">Portfolio Builder</span>
+                <span class="tag blue">Scroll & Tell — Automation</span>
+                <span class="tag green">Case Study Writing</span>
+                <span class="tag purple">[Client Name] — VA Work</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <div class="step-title">Click "Create Project"</div>
+            <div class="step-body">Your project now exists. You'll land inside it, where you'll see two main areas: <strong>Instructions</strong> (top) and <strong>Files</strong> (below). We'll fill both of these in the next steps.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="screenshot-placeholder">
+        <div class="screenshot-icon">🖥️</div>
+        <div class="screenshot-label">📸 Add screenshot: Claude sidebar showing Projects section → New Project button → naming screen</div>
+      </div>
+    </div>
+
+    <div id="project-instructions" class="subsection">
+      <div class="subsection-title">Step 2 — Writing Your Project Instructions</div>
+
+      <p>This is the most important step. The instructions you write here are what Claude reads at the start of every single conversation inside this project. They tell Claude who you are, what you're working on, how you want it to respond, and what rules to follow.</p>
+
+      <div class="callout warning">
+        <div class="callout-icon">⚠️</div>
+        <div class="callout-body">
+          <div class="callout-title">Common mistake</div>
+          Most people write vague instructions like "help me with my portfolio." That won't work well. Claude needs specific context to give you specific, useful help.
+        </div>
+      </div>
+
+      <p>Below is the exact instruction template structure I use. Copy and adapt it for your own project.</p>
+
+      <div class="code-block">
+        <div class="code-header">
+          <div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div>
+          <div class="code-label">Claude Project Instructions Template</div>
+        </div>
+        <div class="code-content"><span class="comment">## Who I Am</span>
+[Your name] — [Your current role / title]
+[Location, work setup: remote, freelance, etc.]
+[1–2 sentences on what kind of work you do]
+
+<span class="comment">## What This Project Is For</span>
+[Describe the specific purpose of this project.
+Be specific. "This project is for writing my case study
+on the Instagram automation system I built for Scroll & Tell,
+then using it to build my portfolio page."]
+
+<span class="comment">## What I Want Claude To Do</span>
+- [Task 1 — e.g., "Help me write case studies from my workflow files"]
+- [Task 2 — e.g., "Review and improve my resume bullet points"]
+- [Task 3 — e.g., "Help me write HTML/CSS for my portfolio pages"]
+
+<span class="comment">## How I Want Claude To Respond</span>
+- [Tone: e.g., "Direct, professional, no filler phrases"]
+- [Format: e.g., "Use headers and bullet points for structure"]
+- [Depth: e.g., "Go deep on technical accuracy, don't oversimplify"]
+- [Honesty: e.g., "If something I made has a weakness, say it"]
+
+<span class="comment">## My Skill Level</span>
+[Be honest so Claude calibrates correctly.
+E.g., "I know n8n and API integrations well.
+I'm comfortable with HTML/CSS but not advanced JavaScript.
+I'm new to GitHub and Netlify."]
+
+<span class="comment">## Important Rules</span>
+- [Rule 1 — e.g., "Never exaggerate my results or experience"]
+- [Rule 2 — e.g., "Always base case study content on the actual files I upload"]
+- [Rule 3 — e.g., "If I ask for code, write it so I can copy and use it directly"]
+
+<span class="comment">## My Files (what's uploaded)</span>
+- [File 1 name and what it is]
+- [File 2 name and what it is]
+- [Update this section when you add new files]</div>
+      </div>
+
+      <div class="callout tip">
+        <div class="callout-icon">💡</div>
+        <div class="callout-body">
+          <div class="callout-title">My actual example — Portfolio & Case Study Project</div>
+          Here's how I filled this out for my own portfolio project:
+        </div>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div>
+          <div class="code-label">Chelsea's Instructions — Portfolio Builder Project</div>
+        </div>
+        <div class="code-content"><span class="comment">## Who I Am</span>
+Chelsea Andrea Dominguez — AI Workflow Designer & Automation Builder
+Philippines, fully remote.
+I build n8n automation workflows and AI-powered systems,
+mostly for social media management and content operations.
+
+<span class="comment">## What This Project Is For</span>
+This project is for building my professional portfolio.
+Specifically: writing case studies from my actual workflow files,
+updating my resume and LinkedIn to match, and eventually
+generating the HTML/CSS code for my portfolio website.
+
+<span class="comment">## What I Want Claude To Do</span>
+- Analyze my n8n workflow JSON files and help me understand them deeply
+- Write technical case studies that are honest about both strengths and weaknesses
+- Generate portfolio copy, resume bullets, and LinkedIn descriptions
+- Help me write or improve HTML/CSS for my portfolio site
+
+<span class="comment">## How I Want Claude To Respond</span>
+- Be honest. If a system has limitations, say so clearly.
+- Use professional but human language — not robotic, not overhyped
+- When writing case studies, base everything on the uploaded files
+- Structure longer outputs with headers so they're easy to read
+
+<span class="comment">## My Skill Level</span>
+Intermediate in n8n, automation, and AI tools.
+Comfortable with HTML/CSS basics.
+New to GitHub and Netlify — explain those steps clearly.
+
+<span class="comment">## Rules</span>
+- Never claim results I haven't actually achieved
+- Always distinguish between rule-based logic and AI logic in my systems
+- If asked for code, make it copy-paste ready
+
+<span class="comment">## Files Uploaded</span>
+- Resume (DOCX) — my current resume as of 2026
+- Instagram Automation Workflow (JSON) — n8n workflow for Scroll & Tell
+- Notion Portfolio PDF — my old Notion-based portfolio for reference</div>
+      </div>
+
+      <div class="callout note">
+        <div class="callout-icon">📝</div>
+        <div class="callout-body">
+          <div class="callout-title">For your own topic (not a portfolio)</div>
+          The structure above works for any project. Replace the portfolio sections with whatever your project is. Consulting clients? Systems documentation? Content creation? The same framework applies — just change the "What This Project Is For" and "What I Want Claude To Do" sections.
+        </div>
+      </div>
+    </div>
+
+    <div id="project-files" class="subsection">
+      <div class="subsection-title">Step 3 — What to Upload in the Files Section</div>
+
+      <p>Files you upload to a Project become part of Claude's knowledge for every conversation inside it. Claude can read, analyze, and reference them without you needing to paste the content each time.</p>
+
+      <p>Think carefully about what Claude actually needs to help you. Here's the framework I use:</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>File Type</th>
+              <th>What to upload</th>
+              <th>Why</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Your Resume</strong></td>
+              <td>Your most current resume (DOCX or PDF)</td>
+              <td>Claude uses your actual experience when generating copy, bullets, or case study positioning</td>
+            </tr>
+            <tr>
+              <td><strong>Workflow Files</strong></td>
+              <td>n8n JSON exports, automation diagrams, or screenshots</td>
+              <td>Claude can read the JSON and understand exactly what the system does — no guessing</td>
+            </tr>
+            <tr>
+              <td><strong>Reference Portfolio</strong></td>
+              <td>Your old Notion export, previous portfolio PDF, or website screenshot</td>
+              <td>Gives Claude your existing structure and design preferences to build from</td>
+            </tr>
+            <tr>
+              <td><strong>SOPs / Docs</strong></td>
+              <td>Any process docs, SOPs, or notes about your systems</td>
+              <td>Useful for technical deep-dives or explaining how you work to Claude</td>
+            </tr>
+            <tr>
+              <td><strong>Project-Specific Ref</strong></td>
+              <td>Client briefs, project goals, or context documents</td>
+              <td>Helps Claude understand constraints and requirements for the specific project</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-icon">ℹ️</div>
+        <div class="callout-body">
+          <div class="callout-title">File format notes</div>
+          Claude reads DOCX, PDF, JSON, TXT, and most plain text formats. For n8n workflows, export as JSON — Claude can read the nodes and connections directly. For images or diagrams, PDF or PNG works best.
+        </div>
+      </div>
+
+      <div class="subsection-title" style="margin-top: 32px;">Step 4 — Uploading Your Files</div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <div class="step-title">Inside your project, find the Files section</div>
+            <div class="step-body">It's usually below the Instructions box. Look for "Add files" or a paperclip/upload icon.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <div class="step-title">Click "Add files" and select your files</div>
+            <div class="step-body">You can upload multiple files. Wait for each one to finish processing before starting a conversation.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <div class="step-title">Update your instructions when files change</div>
+            <div class="step-body">Go back to your Instructions text and update the "Files Uploaded" section at the bottom. This keeps Claude oriented on what's currently available.</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="project-use" class="callout tip" style="margin-top: 24px;">
+        <div class="callout-icon">🚀</div>
+        <div class="callout-body">
+          <div class="callout-title">Now you're ready to use the project</div>
+          Start a new conversation inside the project. Claude will have read your instructions and files before you type your first message. You can jump straight to: <em>"Analyze my n8n workflow and identify the three most important things to highlight in my case study."</em> No preamble needed.
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- =================== PART DIVIDER =================== -->
+  <div class="part-divider">
+    <div class="part-label">Part 02</div>
+    <div class="part-line"></div>
+  </div>
+
+
+  <!-- PART 2: CASE STUDY -->
+  <div id="casestudy-why" class="section">
+    <div class="section-header">
+      <span class="section-number">02</span>
+      <h2 class="section-title">Writing the Case Study First</h2>
+    </div>
+
+    <p>Most people build their portfolio first, then try to write the case study inside it. That's backwards. The case study is the source of truth. Your portfolio is just a container for it.</p>
+
+    <p>Write the case study first, and three things get easier: your portfolio page writes itself, your resume bullets become obvious, and your LinkedIn summary has something real to say.</p>
+
+    <div class="progress-track">
+      <div class="progress-step active"><span class="ps-num">✅</span>Project Setup</div>
+      <div class="progress-step active"><span class="ps-num">📄</span>Gather Materials</div>
+      <div class="progress-step active"><span class="ps-num">🔄</span>Update LinkedIn & CV</div>
+      <div class="progress-step active"><span class="ps-num">✍️</span>Write Case Study</div>
+      <div class="progress-step"><span class="ps-num">🌐</span>Build Portfolio</div>
+    </div>
+
+    <div id="casestudy-gather" class="subsection">
+      <div class="subsection-title">Step 1 — Gather Your Raw Materials</div>
+
+      <p>Before writing anything, collect everything that proves the work happened. Claude can only write a credible case study if it has real evidence to work from.</p>
+
+      <ul class="checklist">
+        <li class="check-item"><div class="check-box done"></div><span>Your actual workflow file — n8n JSON, flowchart, or screenshot of the full workflow</span></li>
+        <li class="check-item"><div class="check-box done"></div><span>Any metrics you have — time saved, response rate, volume of messages handled</span></li>
+        <li class="check-item"><div class="check-box done"></div><span>The problem you were solving — what existed before you built this? What broke?</span></li>
+        <li class="check-item"><div class="check-box done"></div><span>The decisions you made — what did you try first? What did you change and why?</span></li>
+        <li class="check-item"><div class="check-box"></div><span>Any feedback you received — from a client, collaborator, or yourself after testing</span></li>
+        <li class="check-item"><div class="check-box"></div><span>Screenshots or recordings of the system working (even locally is fine)</span></li>
+      </ul>
+
+      <div class="callout warning">
+        <div class="callout-icon">⚠️</div>
+        <div class="callout-body">
+          <div class="callout-title">Don't have all of this?</div>
+          That's normal. Write down what you do know in a plain text file. Things like "I built this because the client was manually responding to every DM" count as real context. Upload that file to your Claude Project and work from there.
+        </div>
+      </div>
+    </div>
+
+    <div id="casestudy-update" class="subsection">
+      <div class="subsection-title">Step 2 — Update LinkedIn and Your Resume Before You Write</div>
+
+      <p>This step catches most people off guard, but it's worth doing now. Your case study will generate new language for your experience. If you update LinkedIn and your resume after writing the case study, you get consistency across all three.</p>
+
+      <p>Here's the exact sequence that worked for me:</p>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <div class="step-title">Check your current LinkedIn "Experience" section</div>
+            <div class="step-body">Does it mention the project you're writing a case study for? If yes, look at how you described it. If the language is vague ("helped with automation tasks"), that needs to change. If it's missing entirely, you'll add it after the case study is done.</div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <div class="step-title">In your Claude Project, ask for LinkedIn-ready bullet points</div>
+            <div class="step-body">Prompt example you can copy:
+              <div class="code-block" style="margin-top: 10px;">
+                <div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><div class="code-label">Prompt</div></div>
+                <div class="code-content">Based on my resume and workflow file, write 4–5 LinkedIn
+experience bullet points for my role at [Company Name].
+
+Rules:
+- Start each bullet with a strong action verb
+- Include at least one specific metric or outcome per bullet
+- Be technically accurate — don't overstate what the system does
+- Keep each bullet to 1–2 lines maximum</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <div class="step-title">Update your resume with the same language</div>
+            <div class="step-body">Consistency matters. A recruiter who sees your LinkedIn then opens your resume should read the same story told in the same way. Copy the finalized bullets into your resume doc in the same Claude Project.</div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <div class="step-title">Update your LinkedIn "About" section if needed</div>
+            <div class="step-body">Your About section should mention the type of work you've done without going into project specifics. Ask Claude: <em>"Write a 3-sentence LinkedIn About section for me based on my resume and the kind of work I do."</em></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout note">
+        <div class="callout-icon">📌</div>
+        <div class="callout-body">
+          <div class="callout-title">Why update these before the case study is final?</div>
+          Because writing the case study forces you to understand your own work more clearly. You'll notice what actually mattered and what was just noise. Update your professional profiles with that clarity, not with your pre-case-study vagueness.
+        </div>
+      </div>
+    </div>
+
+    <div id="casestudy-write" class="subsection">
+      <div class="subsection-title">Step 3 — Writing the Case Study With Claude</div>
+
+      <p>Now you're ready. Here's the exact process I use inside my Claude Project to generate a complete, honest case study from a real workflow.</p>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <div class="step-title">Start a new conversation inside your Project</div>
+            <div class="step-body">Don't use a regular Claude chat for this. Open your Project and start a new conversation there. Claude will already have your files and instructions loaded.</div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <div class="step-title">Run the system analysis prompt first</div>
+            <div class="step-body">Before asking Claude to write anything, have it analyze your workflow. This grounds everything that follows in what the system actually does.
+              <div class="code-block" style="margin-top: 12px;">
+                <div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><div class="code-label">Analysis Prompt — Run This First</div></div>
+                <div class="code-content">Before writing the case study, analyze my workflow file
+and answer these questions:
+
+1. What are the three main layers of this system?
+   (input, decision, intelligence)
+
+2. Which parts are rule-based vs AI-driven?
+
+3. What is stateful (remembers context) vs stateless?
+
+4. What is the single most interesting design decision
+   I made in this system?
+
+5. Where are the three most likely failure points?
+
+Be specific and reference actual nodes or components
+from the workflow file.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <div class="step-title">Read the analysis and add your context</div>
+            <div class="step-body">Claude's analysis will be accurate technically, but it won't know <em>why</em> you made certain decisions. Reply with additional context: "The reason I used TinyLlama for classification instead of a larger model is because this runs locally and latency matters." This becomes part of the case study's depth.</div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <div class="step-title">Run the full case study prompt</div>
+            <div class="step-body">
+              <div class="code-block">
+                <div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><div class="code-label">Full Case Study Generation Prompt</div></div>
+                <div class="code-content">Now write a complete portfolio case study based on your
+analysis and my workflow file.
+
+Structure it exactly like this:
+
+1. HOOK — one sharp sentence that captures what this
+   system does and why it's different
+
+2. PROBLEM — the real-world inefficiency this solves
+
+3. SOLUTION — accurate description of what I built
+   (no exaggeration)
+
+4. ARCHITECTURE — explain the three layers:
+   input, decision, and intelligence
+
+5. KEY INNOVATION — focus on the AI conversation
+   design, not just the automation
+
+6. LIMITATIONS — be specific and honest about what
+   breaks, what doesn't scale, what's fragile
+
+7. FUTURE IMPROVEMENTS — how this evolves into a
+   production-grade system
+
+8. IMPACT — only include metrics I can actually prove
+
+Tone rules:
+- Write for a technical reviewer who will check the details
+- Acknowledge tradeoffs, not just wins
+- Use precise language — no vague claims
+
+Also generate at the end:
+- 3 resume bullet points (results-oriented)
+- 1 LinkedIn feature description (2–3 sentences)
+- 1 "Systems Thinking" paragraph (for portfolio intro)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">5</div>
+          <div class="step-content">
+            <div class="step-title">Review, push back, and iterate</div>
+            <div class="step-body">Read the output critically. If something sounds exaggerated, tell Claude. If a section is too vague, ask for more detail. The best case studies come from 2–3 revision rounds, not the first output. Treat Claude as a co-writer who needs your feedback, not a one-shot generator.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="casestudy-output" class="subsection">
+      <div class="subsection-title">Step 4 — What You'll Have at the End of Part 2</div>
+
+      <ul class="checklist">
+        <li class="check-item"><div class="check-box done"></div><span>A full case study document (ready to paste into your portfolio)</span></li>
+        <li class="check-item"><div class="check-box done"></div><span>Updated resume bullets for this project</span></li>
+        <li class="check-item"><div class="check-box done"></div><span>A LinkedIn feature description</span></li>
+        <li class="check-item"><div class="check-box done"></div><span>A "Systems Thinking" paragraph for your portfolio intro</span></li>
+        <li class="check-item"><div class="check-box done"></div><span>Updated LinkedIn Experience section</span></li>
+        <li class="check-item"><div class="check-box done"></div><span>Updated resume document in your project files</span></li>
+      </ul>
+
+      <div class="callout tip">
+        <div class="callout-icon">💡</div>
+        <div class="callout-body">
+          <div class="callout-title">Save everything before moving on</div>
+          Copy the final case study to a Notion page, Google Doc, or text file. You'll reference it directly when building your portfolio in Part 3.
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- =================== PART DIVIDER =================== -->
+  <div class="part-divider">
+    <div class="part-label">Part 03</div>
+    <div class="part-line"></div>
+  </div>
+
+
+  <!-- PART 3: PORTFOLIO -->
+  <div id="portfolio-overview" class="section">
+    <div class="section-header">
+      <span class="section-number">03</span>
+      <h2 class="section-title">Building Your Portfolio Site</h2>
+    </div>
+
+    <p>You have two starting points: you already have a Notion portfolio and want to convert it to a real website, or you're starting from scratch. Both paths end at the same place — a live site on a custom URL, deployed through GitHub and Netlify.</p>
+
+    <div class="grid-2">
+      <div class="info-card">
+        <div class="info-card-title">🔄 Path A — Migrating from Notion</div>
+        <div class="info-card-body">You have an existing Notion portfolio. You want to move it to a proper website with a custom URL, better design, and no Notion branding. This is what I did.</div>
+      </div>
+      <div class="info-card">
+        <div class="info-card-title">✨ Path B — Starting from Scratch</div>
+        <div class="info-card-body">You have your case study and resume but no existing portfolio site. You'll build the HTML/CSS with Claude's help directly, then deploy it.</div>
+      </div>
+    </div>
+
+    <div id="portfolio-migrate" class="subsection">
+      <div class="subsection-title">Path A — Migrating Your Notion Portfolio to HTML</div>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <div class="step-title">Export your Notion pages</div>
+            <div class="step-body">In Notion, go to the three-dot menu (···) on your main portfolio page → <strong>Export</strong> → choose <strong>PDF</strong> or <strong>HTML</strong>. PDF is easier to share with Claude; HTML gives you a structural starting point. Export everything you want to keep.</div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <div class="step-title">Upload the export to your Claude Project</div>
+            <div class="step-body">Upload the Notion export (PDF or HTML) to the Files section of your Project. This gives Claude your existing structure, sections, and content to work from.</div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <div class="step-title">Ask Claude to reconstruct it as clean HTML/CSS</div>
+            <div class="step-body">
+              <div class="code-block" style="margin-top: 10px;">
+                <div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><div class="code-label">Migration Prompt</div></div>
+                <div class="code-content">I'm migrating my Notion portfolio to a standalone HTML website.
+I've uploaded my Notion export as a PDF/file.
+
+Please:
+1. Read the structure and content from my Notion export
+2. Rebuild it as clean, single-file HTML with embedded CSS
+3. Keep the same sections but make the design more professional
+4. Use my case study content (also uploaded) for the project section
+5. Make it mobile-responsive
+
+Design preferences:
+- [Dark/Light theme? Minimal or detailed?]
+- [Any colors you prefer or want to avoid?]
+- [Reference sites you like the style of, if any]
+
+Output a single index.html file I can use directly.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <div class="step-title">Review, request changes, iterate</div>
+            <div class="step-body">Claude will generate the HTML. Read it in a browser (save the file, double-click to open). List what needs changing. <em>"Make the header bigger. The project cards need more spacing. Change the font to something cleaner."</em> Keep iterating until it looks right.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="portfolio-scratch" class="subsection">
+      <div class="subsection-title">Path B — Building From Scratch</div>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <div class="step-title">Decide your sections before asking Claude to code</div>
+            <div class="step-body">A portfolio for a VA/automation specialist needs at minimum:
+              <ul style="margin-top: 8px; padding-left: 20px; color: var(--text-muted); font-size: 14px; line-height: 2;">
+                <li>Hero section (name, title, one-line summary)</li>
+                <li>About / skills section</li>
+                <li>Projects / case studies section</li>
+                <li>Experience / background section</li>
+                <li>Contact / links section</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <div class="step-title">Use this prompt in your Claude Project</div>
+            <div class="step-body">
+              <div class="code-block" style="margin-top: 10px;">
+                <div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><div class="code-label">Build from Scratch Prompt</div></div>
+                <div class="code-content">Build me a professional portfolio website as a single HTML file.
+
+Use all context from my uploaded resume, case study, and files.
+
+Sections needed:
+- Hero: name, title, short summary
+- About + Key Skills
+- Projects (feature my case study prominently)
+- Experience & Education
+- Certifications
+- Contact (email + LinkedIn + GitHub links)
+
+Requirements:
+- Single index.html file with CSS embedded in &lt;style&gt; tags
+- Mobile responsive
+- Professional but not boring
+- Load fast (no external libraries unless necessary)
+
+My info is in the uploaded files — pull from those directly.
+Don't invent experience I don't have.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <div class="step-title">Save the output as index.html and preview it</div>
+            <div class="step-body">Copy Claude's HTML output. Open a text editor (Notepad, VS Code, or any editor). Paste and save as <code>index.html</code>. Open the file in your browser to preview. Make a list of things to fix and iterate with Claude.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="portfolio-github" class="subsection">
+      <div class="subsection-title">Setting Up GitHub (Required for Netlify)</div>
+
+      <p>Netlify deploys your site from a GitHub repository. You don't need to know how to code to use GitHub for this. Think of it as a folder in the cloud that Netlify watches and publishes automatically.</p>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <div class="step-title">Create a GitHub account if you don't have one</div>
+            <div class="step-body">Go to <strong>github.com</strong> → Sign up. Use a professional email. Your username will appear in your repo URL so keep it clean (e.g., <code>chelsea-dominguez</code> not <code>cjd_coolgal99</code>).</div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <div class="step-title">Create a new repository</div>
+            <div class="step-body">Click the green <strong>New</strong> button or go to <code>github.com/new</code>. Name it something like <code>portfolio</code> or <code>my-portfolio</code>. Set it to <strong>Public</strong>. Check "Add a README file." Click <strong>Create repository</strong>.</div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <div class="step-title">Upload your index.html file</div>
+            <div class="step-body">Inside your new repo, click <strong>Add file</strong> → <strong>Upload files</strong>. Drag and drop your <code>index.html</code> file. Scroll down, write a commit message like <em>"Initial portfolio upload"</em>, and click <strong>Commit changes</strong>.</div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <div class="step-title">Confirm the file is there</div>
+            <div class="step-body">You should now see <code>index.html</code> listed in your repository. That's all GitHub needs. You can always update the file here later by uploading a new version — it will replace the old one.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="screenshot-placeholder">
+        <div class="screenshot-icon">🐙</div>
+        <div class="screenshot-label">📸 Add screenshots: GitHub new repo screen → Upload files → Repo with index.html visible</div>
+      </div>
+    </div>
+
+    <div id="portfolio-netlify" class="subsection">
+      <div class="subsection-title">Deploying to Netlify</div>
+
+      <p>Netlify takes your GitHub repo and publishes it as a live website. Every time you push a change to GitHub, Netlify automatically updates the live site.</p>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <div class="step-title">Go to netlify.com and create an account</div>
+            <div class="step-body">Sign up with your GitHub account — this makes the connection much easier. Click <strong>Sign up with GitHub</strong> and authorize Netlify.</div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <div class="step-title">Click "Add new site" → "Import an existing project"</div>
+            <div class="step-body">Choose <strong>Deploy with GitHub</strong>. You'll see a list of your repositories. Select the portfolio repo you just created.</div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <div class="step-title">Configure the deploy settings</div>
+            <div class="step-body">For a basic HTML site, you don't need to change anything here. The defaults work:
+              <ul style="margin-top: 8px; padding-left: 20px; color: var(--text-muted); font-size: 14px; line-height: 2;">
+                <li><strong>Branch:</strong> main</li>
+                <li><strong>Build command:</strong> leave empty</li>
+                <li><strong>Publish directory:</strong> leave empty (or type <code>/</code>)</li>
+              </ul>
+              Click <strong>Deploy site</strong>.
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <div class="step-title">Wait about 30 seconds for the deployment</div>
+            <div class="step-body">Netlify will show a spinning indicator, then a green checkmark with a URL like <code>random-name-123.netlify.app</code>. Click it — your site is live.</div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">5</div>
+          <div class="step-content">
+            <div class="step-title">Rename your Netlify subdomain</div>
+            <div class="step-body">Go to <strong>Site settings</strong> → <strong>Domain management</strong> → <strong>Options</strong> next to the Netlify subdomain → <strong>Edit site name</strong>. Change it to something like <code>chelseaandrea-dominguez</code>. Your URL becomes <code>chelseaandrea-dominguez.netlify.app</code>.</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="portfolio-domain" class="callout tip" style="margin-top: 24px;">
+        <div class="callout-icon">🌐</div>
+        <div class="callout-body">
+          <div class="callout-title">Optional: Custom domain (e.g., chelseaandrea.dev)</div>
+          If you want a custom domain like <code>yourname.com</code> instead of <code>.netlify.app</code>, buy one from Namecheap or Porkbun (usually $10–15/year). In Netlify → Domain management → Add custom domain. Follow the DNS instructions Netlify gives you — it takes 10–30 minutes to go live. This step is optional but adds credibility.
+        </div>
+      </div>
+
+      <div class="callout note" style="margin-top: 16px;">
+        <div class="callout-icon">🔄</div>
+        <div class="callout-body">
+          <div class="callout-title">Updating your site going forward</div>
+          Whenever you update your portfolio, edit your <code>index.html</code> file locally, then go to your GitHub repo → Add file → Upload files → upload the new version → commit. Netlify detects the change and redeploys within 1 minute. No code commands needed.
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- =================== PART DIVIDER =================== -->
+  <div class="part-divider">
+    <div class="part-label">Part 04 — Optional</div>
+    <div class="part-line"></div>
+  </div>
+
+
+  <!-- PART 4: GOOGLE SEARCH CONSOLE -->
+  <div id="seo-google" class="section">
+    <div class="section-header">
+      <span class="section-number">04</span>
+      <h2 class="section-title">Getting Indexed in Google Search</h2>
+    </div>
+
+    <p>By default, Google doesn't know your site exists. It will eventually find it through links, but that can take weeks or months. Google Search Console lets you submit your site directly so it gets indexed faster and shows up when someone searches your name.</p>
+
+    <div class="callout info">
+      <div class="callout-icon">ℹ️</div>
+      <div class="callout-body">
+        <div class="callout-title">What "indexed" means</div>
+        Google crawls websites and adds them to its database (the index). Only indexed pages can appear in search results. This process submits your portfolio directly to that database instead of waiting for Google to find it on its own.
+      </div>
+    </div>
+
+    <div class="subsection">
+      <div class="subsection-title">Step-by-Step: Google Search Console</div>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <div class="step-title">Go to search.google.com/search-console</div>
+            <div class="step-body">Sign in with your Google account. You'll see a "Welcome" screen if this is your first time.</div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <div class="step-title">Click "Add property" and choose "URL prefix"</div>
+            <div class="step-body">Choose the <strong>URL prefix</strong> option (not Domain). Type your full Netlify URL: <code>https://yourname.netlify.app</code>. Click Continue.</div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <div class="step-title">Verify ownership via HTML tag</div>
+            <div class="step-body">Google will give you a verification method. Choose <strong>HTML tag</strong>. You'll get a small code snippet that looks like:<br><br>
+              <code>&lt;meta name="google-site-verification" content="abc123..." /&gt;</code><br><br>
+              Copy that code.
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <div class="step-title">Paste the tag into your index.html</div>
+            <div class="step-body">Open your <code>index.html</code> file. Find the <code>&lt;head&gt;</code> section near the top. Paste the meta tag inside <code>&lt;head&gt;</code> and before <code>&lt;/head&gt;</code>. Save the file, upload it to GitHub (same steps as before). Wait 1–2 minutes for Netlify to redeploy.</div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">5</div>
+          <div class="step-content">
+            <div class="step-title">Back in Search Console, click "Verify"</div>
+            <div class="step-body">Google checks for the tag on your live site. It should say <strong>Verified</strong>. If it fails, wait another minute and try again — Netlify may still be deploying.</div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">6</div>
+          <div class="step-content">
+            <div class="step-title">Submit your sitemap (or just submit your URL)</div>
+            <div class="step-body">In the Search Console left sidebar, click <strong>URL Inspection</strong>. Type your full URL. Click <strong>Request Indexing</strong>. Google will queue your page for crawling. This usually happens within 24–72 hours.</div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">7</div>
+          <div class="step-content">
+            <div class="step-title">Test that it worked</div>
+            <div class="step-body">After a day or two, search Google for <code>site:yourname.netlify.app</code>. If results appear, your page is indexed. You can also search your own full name — if your portfolio appears in the first page, the whole process worked.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout warning">
+        <div class="callout-icon">⚠️</div>
+        <div class="callout-body">
+          <div class="callout-title">Don't expect it to rank immediately</div>
+          Indexing and ranking are different. Being indexed means Google knows about you. Ranking means Google shows you for specific searches. Your name will likely rank well quickly — keyword-based searches take longer. That's fine for a portfolio.
+        </div>
+      </div>
+
+      <div class="callout tip">
+        <div class="callout-icon">💡</div>
+        <div class="callout-body">
+          <div class="callout-title">Speed up indexing: get one backlink</div>
+          The fastest way to get indexed is to have one other site link to yours. Add your portfolio URL to your LinkedIn profile, your GitHub profile README, or any social bio. Google finds new sites by following links from known sites. LinkedIn and GitHub are both highly trusted by Google.
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- FINAL SUMMARY -->
+  <div class="divider"></div>
+
+  <div class="subsection">
+    <div class="subsection-title">What You Now Have</div>
+
+    <ul class="checklist">
+      <li class="check-item"><div class="check-box done"></div><span>A Claude Project set up with your files, instructions, and context — ready for any future work</span></li>
+      <li class="check-item"><div class="check-box done"></div><span>A complete, honest case study written from your actual workflow files</span></li>
+      <li class="check-item"><div class="check-box done"></div><span>Updated resume bullets and LinkedIn experience section</span></li>
+      <li class="check-item"><div class="check-box done"></div><span>A live portfolio site deployed at a public URL</span></li>
+      <li class="check-item"><div class="check-box done"></div><span>Your site submitted for Google indexing</span></li>
+    </ul>
+
+    <div class="callout note" style="margin-top: 24px;">
+      <div class="callout-icon">🔁</div>
+      <div class="callout-body">
+        <div class="callout-title">This is a repeatable system</div>
+        Every time you build a new system or complete a new project, you follow the same process: document it → run it through Claude → write the case study → update LinkedIn and resume → add a new page to the portfolio → resubmit to Google. The Claude Project stays open and keeps growing with you.
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <p style="font-size: 12px; color: var(--text-dim); text-align: center; margin-top: 40px;">
+    Chelsea Andrea Dominguez · Systems Manual · v1.0 · April 2026<br>
+    <span style="margin-top: 6px; display: block;">chelseandrea99@gmail.com · <a href="https://chelseaandrea-dominguez.netlify.app/" style="color: var(--accent); text-decoration: none;">Portfolio</a> · <a href="https://www.linkedin.com/in/chelseaandreadominguez/" style="color: var(--accent); text-decoration: none;">LinkedIn</a></span>
+  </p>
+
+</main>
+</div>
+
+<a href="#intro" class="back-to-top">↑ Top</a>
+
+<script>
+  // Active sidebar item on scroll
+  const sections = document.querySelectorAll('[id]');
+  const sidebarLinks = document.querySelectorAll('.sidebar-item');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        sidebarLinks.forEach(link => {
+          link.classList.remove('active');
+          if (link.getAttribute('href') === '#' + entry.target.id) {
+            link.classList.add('active');
+          }
+        });
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+
+  sections.forEach(s => observer.observe(s));
+</script>
+
+</body>
+</html>
